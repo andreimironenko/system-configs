@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ################################################################################
-# TODO: Add description here!                                                  #
+# List, get info and switch available configuration                            #
 ################################################################################
 
 declare -rx SCRIPT=${0##*/}
