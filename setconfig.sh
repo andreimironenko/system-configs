@@ -31,6 +31,7 @@ EXIT_SUCCESS=0
 EXIT_FAIL_INVALID_PARAMETERS=192 
 EXIT_FAIL_INVALID_OPTIONS=193
 EXIT_FAIL_NO_DESCRIPTION=194
+EXIT_FAIL_APPLY_PATCHES=195
 
 # Command options array
 #declare -a options=""
@@ -239,16 +240,27 @@ function list_handler ()
 # non-zero		- Indicating an error
 function reset_handler () 
 {
+	if [ "$active" = "zero" ] ; then
+		return ${EXIT_SUCCESS}
+	fi
 
+
+	execute pushd ${PWD}	
+	execute cd /etc
 	# Remove all the patches	
 	execute quilt pop -a
+	execute popd
+	
+	# Call post-remove.sh scripts	
+	if [ -f ${configs_dir}/${active}/scripts/remove.sh ] ; then
+		${configs_dir}/${active}/scripts/remove.sh
+	fi
 
 	if [ -L  ${patches_slink} ] ; then	
 		# Remove /etc/patches symlink, to indicate this is reset to zero, 
     	# package-default state
 		execute rm ${patches_slink} 
 	fi
-
 		
 	active="zero"
 	
@@ -341,6 +353,8 @@ function help_handler ()
 function switch_config () 
 {
 	local config=$1
+	local previous=$active
+	local r=0
 	
 	
 	if [ $config = "zero" ] ; then
@@ -358,14 +372,35 @@ function switch_config ()
   			if [ -d ${configs_dir}/${config} ] ; then
   				
 				#Reseting configuration to Zero state"		
-  				reset_handler	
+  				reset_handler
   				
   				#Set symlink to the requested configuration
-				execute ln -sf "configs/${config}" patches	
+				execute pushd ${PWD}		
+				execute cd /etc 	
+				execute ln -sf configs/${config} patches	
 				
 				# Now let's aplly all the patches
-				execute quilt push -a 		
+				execute quilt push -a 
+				r=$?
+					
 				
+				if [ "$r" -ne "0" ] ; then
+					
+					execute quilt pop -a
+					execute rm ${patches_slink}
+					
+					printf "%s\n" "Applying \"$config\" config has failed! Reseting to Zero."
+					
+					return ${EXIT_FAIL_APPLY_PATCHES}
+				fi
+			
+				execute popd
+				
+				# Call install.sh scripts	
+				if [ -f ${configs_dir}/${config}/scripts/install.sh ] ; then
+					${configs_dir}/${config}/scripts/install.sh
+				fi	
+	
 				# Set active configuration
 				active="$config"
 				
