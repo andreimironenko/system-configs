@@ -377,7 +377,7 @@ function switch_config ()
   				#Set symlink to the requested configuration
 				execute pushd ${PWD}		
 				execute cd /etc 	
-				execute ln -sf configs/${config} patches	
+				execute ln -sf configs/${config}/patches patches	
 				
 				# Now let's aplly all the patches
 				execute quilt push -a 
