@@ -170,6 +170,7 @@ function get_active ()
 	if [ -L ${patches_slink} ] ; then
 		active=`readlink ${patches_slink}`
 		active=${active#"configs/"}
+		active=${active%"/patches"}
 	else
 		active="zero"	
 	fi
@@ -189,9 +190,6 @@ function init ()
 	get_active
 }
 
-
-
-
 # The list_handler() lists all available configurations and marks the active
 # configuration by putting '*' at the beginning of the line
 # 
@@ -200,6 +198,42 @@ function init ()
 #      0		- Success
 # non-zero		- Indicating an error
 function list_handler ()
+{
+	local config
+	
+	if [ "$active" = "zero" ] ; then
+		printf "%s" "(*) "; printf "%s\n" "zero";   
+	else
+		(( offset=16 ))
+		printf "%.0s " {1..4}; printf "%s\n" "zero";  
+	fi
+
+	for config in ${configs[*]} 
+	do
+		if [ "$active" = "$config" ] ; then
+			printf "%s" "(*) "; printf "%s\n" "${config}";   
+		else
+			printf "%.0s " {1..4}; printf "%s\n" "${config}";  
+		fi
+	done	
+	
+	printf "%s\n"	
+	
+  	return ${EXIT_SUCCESS}   	
+}
+
+
+
+
+# The list_description_handler() lists all available configurations and marks the active
+# configuration by putting '*' at the beginning of the line and prints out
+# configuration short description
+# 
+# No input parameters
+# return: 
+#      0		- Success
+# non-zero		- Indicating an error
+function list_description_handler ()
 {
 	local config
 	local description
@@ -323,7 +357,9 @@ function help_handler ()
 	printf "%s\n"
 	printf "%s\n" "Options:"
 	printf "%s\n"
-	printf "%s\t%s\n" "-l, --list"        "List available configurations. The active configuration will be marked by '*'" 
+	printf "%s\t%s\n" "-l, --list"        "List available configurations, names only. The active configuration will be marked by '*'" 
+	printf "%s\n"
+	printf "%s\t%s\n" "-L, --list-description"  "List available configurations, names and short descritpion. The active configuration will be marked by '*'" 
 	printf "%s\n"
 	printf "%s\t%s\n" "-i, --info"        "Print full information about selected configuration" 
 	printf "%s\n"
@@ -439,6 +475,13 @@ while [ $# -gt 0 ]; do
     	continue
      ;;
     
+    --list-description| -L)  shift;
+    	options+=("list-description")
+    	continue
+     ;;
+    
+
+    
     --info| -i)  shift;
     	options+=("info")
     	continue
@@ -482,6 +525,12 @@ case ${options[0]} in
 		list_handler
 		result=$?		
 		;;
+		
+	"list-description")
+		list_description_handler
+		result=$?		
+		;;
+		
 		
 	"reset")
 		printf "\n%s\n" "Reseting to Zero, package-default configuration"		
