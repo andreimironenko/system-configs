@@ -1,2 +1,0 @@
-/usr/local/update      *(rw,no_root_squash,insecure,no_subtree_check)
-/usr/local/data        *(rw,no_root_squash,insecure,no_subtree_check)
